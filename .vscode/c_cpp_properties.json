@@ -1,0 +1,3 @@
+{
+    "clangd.arguments": ["--clang-tidy", "--aaa","--limit-results=100", "--log=error", "--memory-limit=1024M"]
+}
