@@ -1,4 +1,4 @@
-add_library(RendererSrc STATIC
+add_library(SimpleRendererSrc STATIC
     Core.h
     Core.cpp
     System.h
