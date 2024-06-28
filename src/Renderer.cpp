@@ -1,11 +1,14 @@
 #include "Renderer.h"
 #include <iostream>
 #include "glm/ext/matrix_transform.hpp"
+#include "Console.h"
 
 //
 // -- TODO: - Buffer utility functions (buffer swap, clear with bitmask, ..)
 //          - 
 //
+
+bool renderShapes = 1;
 
 void RendererSystem::Init(IWindowSystem* windowSystem, IObjectSystem* objectSystem){
     System::Init();
@@ -53,7 +56,7 @@ void RendererSystem::PrepareDeviceContext()
 void RendererSystem::InitBuffers()
 {
     memset(_pBackBuffer, 0, _windowSystem->GetMainWindow()->_width * _windowSystem->GetMainWindow()->_height*4);
-    std::cout << "Back ";
+    Console::OutInline("Back ");
 
     _pColorBuffer = new unsigned long[_windowSystem->GetMainWindow()->_width * _windowSystem->GetMainWindow()->_height * 4];
     for(int i = 0; i < _windowSystem->GetMainWindow()->_height;++i){
@@ -61,25 +64,46 @@ void RendererSystem::InitBuffers()
             _pColorBuffer[i*_windowSystem->GetMainWindow()->_width+j] = Color(255,255,255,255);
         }
     }
-    std::cout << "Color ";
-
-    std::cout << std::endl;
+    Console::OutInline("Color ");
+    Console::Out();
 }
 
 void RendererSystem::Render(){
     if(IsActive()){
         memset(_pColorBuffer, 0, _windowSystem->GetMainWindow()->_width * _windowSystem->GetMainWindow()->_height * 4);
+        int currPx {0};
+        int hPx {0};
+        int wPx {0};
 
-        for(int i = 0; i < _windowSystem->GetMainWindow()->_height; ++i){
-            for(int j = 0; j < _windowSystem->GetMainWindow()->_width; ++j){
-                // Background color
-                _pColorBuffer[i*_windowSystem->GetMainWindow()->_width+j] = Color(0x13,0x33,0x37,0xff);
+        while(currPx < _windowSystem->GetMainWindow()->_width*_windowSystem->GetMainWindow()->_height-1){
+            _pColorBuffer[currPx] = Color(0x13,0x33,0x37,0xff);
+            if(renderShapes){
                 for(int f = 0; f < _objectSystem->GetObjectVector().size();f++){
-                    if(_objectSystem->GetObjectVector().at(f).Rasterize(j, i, color))
-                        _pColorBuffer[i*_windowSystem->GetMainWindow()->_width+j] = color;
-                }
+                    if(_objectSystem->GetObjectVector().at(f).Draw(wPx, hPx, color))
+                        _pColorBuffer[currPx] = color;
+                }    
+            }
+            currPx++;
+            wPx++;
+            if(hPx == _windowSystem->GetMainWindow()->_height)
+                hPx = 0;
+            if(wPx == _windowSystem->GetMainWindow()->_width){
+                hPx++;
+                wPx = 0;
             }
         }
+        // for(int i = 0; i < _windowSystem->GetMainWindow()->_height; ++i){
+        //     for(int j = 0; j < _windowSystem->GetMainWindow()->_width; ++j){
+        //         // Background color
+        //         _pColorBuffer[i*_windowSystem->GetMainWindow()->_width+j] = Color(0x13,0x33,0x37,0xff);
+        //         if(renderShapes){
+        //             for(int f = 0; f < _objectSystem->GetObjectVector().size();f++){
+        //                 if(_objectSystem->GetObjectVector().at(f).Rasterize(j, i, color))
+        //                     _pColorBuffer[i*_windowSystem->GetMainWindow()->_width+j] = color;
+        //             }    
+        //         }
+        //     }
+        // }
 
         memcpy(_pBackBuffer, _pColorBuffer, _windowSystem->GetMainWindow()->_width * _windowSystem->GetMainWindow()->_height * 4);
 
@@ -95,15 +119,15 @@ void RendererSystem::DrawLine(int x0, int y0, int x1, int y1, unsigned long* buf
     for(float t=0.0; t<1.0;t+=0.01){
         int x = x0 + (x1-x0)*t;
         int y = y0 + (y1-y0)*t;
-        if(GetIndexInMatrix(1024, 768, x, y) > -1)
-            buf[GetIndexInMatrix(1024, 768, x, y)] = col;
+        if(GetIndexInMatrix(_windowSystem->GetMainWindow()->_width, _windowSystem->GetMainWindow()->_height, x, y) > -1)
+            buf[GetIndexInMatrix(_windowSystem->GetMainWindow()->_width, _windowSystem->GetMainWindow()->_height, x, y)] = col;
     }
 }
 
 void RendererSystem::DrawPoint(int x, int y, unsigned long* buf, int col)
 {
-    if(GetIndexInMatrix(1024, 768, x, y) > -1)
-        buf[GetIndexInMatrix(1024, 768, x, y)] = col;
+    if(GetIndexInMatrix(_windowSystem->GetMainWindow()->_width, _windowSystem->GetMainWindow()->_height, x, y) > -1)
+        buf[GetIndexInMatrix(_windowSystem->GetMainWindow()->_width, _windowSystem->GetMainWindow()->_height, x, y)] = col;
 }
 
 int Color(int red, int green, int blue, int alpha){

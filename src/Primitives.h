@@ -24,6 +24,10 @@ public:
     };
 
     Triangle(Vector3 v0, Vector3 v1, Vector3 v2);
+
+    bool Draw(int x, int y, int& color);
+
+    void ComputeVertices();
     
     bool Rasterize(int x, int y, int& color) override;
     

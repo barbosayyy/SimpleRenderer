@@ -1,5 +1,7 @@
 #include "Windowing.h"
-#include <iostream>
+#include "Console.h"
+#include "Object.h"
+#include "Renderer.h"
 
 // Window
 
@@ -54,7 +56,7 @@ void WindowSystem::Init() {
     System::Init();
     Window* window = new Window(_hInstance);
     AddWindow(window);
-    std::cout << "Window Handle address: " << GetMainWindow()->GetHandle() << std::endl;
+    Console::Out("Window Handle address: ", GetMainWindow()->GetHandle());
 }
 
 void WindowSystem::Shutdown() {
@@ -85,6 +87,8 @@ Window* WindowSystem::GetWindowByHandle(HWND handle){
 // Window Message Procedure
 
 extern WindowSystem windowSystem;
+extern ObjectSystem objectSystem;
+extern RendererSystem rendererSystem;
 
 LRESULT CALLBACK WndProc(HWND wnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
     switch(uMsg){
@@ -99,12 +103,40 @@ LRESULT CALLBACK WndProc(HWND wnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
                     GetClientRect(wnd, &rect);
                     windowSystem.GetWindowByHandle(wnd)->_newWidth = rect.right - rect.left;
                     windowSystem.GetWindowByHandle(wnd)->_newHeight = rect.bottom - rect.top;
-                    std::cout << windowSystem.GetWindowByHandle(wnd)->_newWidth << std::endl;
-                    std::cout << windowSystem.GetWindowByHandle(wnd)->_newHeight << std::endl;
+                    Console::Out(windowSystem.GetWindowByHandle(wnd)->_newWidth);
+                    Console::Out(windowSystem.GetWindowByHandle(wnd)->_newHeight);
                 }
             }
         break;
         case WM_KEYDOWN:
+            if(wParam == 'A'){
+                glm::vec3 wPos = glm::vec3(rendererSystem.GetMainCamera()._wPos.x -= 1.0, rendererSystem.GetMainCamera()._wPos.y, rendererSystem.GetMainCamera()._wPos.z);
+                glm::mat4 view = glm::lookAt(wPos, glm::vec3(rendererSystem.GetMainCamera()._wPos.x,rendererSystem.GetMainCamera()._wPos.y,-1),glm::vec3(0,1.0f,0.0));
+                rendererSystem.GetMainCamera()._view = view;
+                objectSystem.GetObjectVector().at(0).ComputeVertices();
+                // objectSystem.GetObjectVector().at(1).ComputeVertices();
+            }
+            else if(wParam == 'D'){
+                glm::vec3 wPos = glm::vec3(rendererSystem.GetMainCamera()._wPos.x += 1.0, rendererSystem.GetMainCamera()._wPos.y, rendererSystem.GetMainCamera()._wPos.z);
+                glm::mat4 view = glm::lookAt(wPos, glm::vec3(rendererSystem.GetMainCamera()._wPos.x,rendererSystem.GetMainCamera()._wPos.y,-1),glm::vec3(0,1.0f,0.0));
+                rendererSystem.GetMainCamera()._view = view;
+                objectSystem.GetObjectVector().at(0).ComputeVertices();
+                // objectSystem.GetObjectVector().at(1).ComputeVertices();
+            }
+            else if(wParam == 'W'){
+                glm::vec3 wPos = glm::vec3(rendererSystem.GetMainCamera()._wPos.x, rendererSystem.GetMainCamera()._wPos.y, rendererSystem.GetMainCamera()._wPos.z -= 1.0);
+                glm::mat4 view = glm::lookAt(wPos, glm::vec3(rendererSystem.GetMainCamera()._wPos.x,rendererSystem.GetMainCamera()._wPos.y,-1),glm::vec3(0,1.0f,0.0));
+                rendererSystem.GetMainCamera()._view = view;
+                objectSystem.GetObjectVector().at(0).ComputeVertices();
+                // objectSystem.GetObjectVector().at(1).ComputeVertices();
+            }
+            else if(wParam == 'S'){
+                glm::vec3 wPos = glm::vec3(rendererSystem.GetMainCamera()._wPos.x, rendererSystem.GetMainCamera()._wPos.y, rendererSystem.GetMainCamera()._wPos.z += 1.0);
+                glm::mat4 view = glm::lookAt(wPos, glm::vec3(rendererSystem.GetMainCamera()._wPos.x,rendererSystem.GetMainCamera()._wPos.y,-1),glm::vec3(0,1.0f,0.0));
+                rendererSystem.GetMainCamera()._view = view;
+                objectSystem.GetObjectVector().at(0).ComputeVertices();
+                // objectSystem.GetObjectVector().at(1).ComputeVertices();
+            }
         break;
         default:
             return DefWindowProc(wnd, uMsg, wParam, lParam);

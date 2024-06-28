@@ -4,6 +4,8 @@
 #include "Primitives.h"
 #include "System.h"
 
+#include "IRenderer.h"
+
 class IObjectSystem : public System{
 public:
     virtual ~IObjectSystem() = default;

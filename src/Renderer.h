@@ -1,27 +1,13 @@
 #pragma once
 
 #include "pch.h"
-#include "Core.h"
 #include "Math.h"
+#include "IRenderer.h"
 #include "Windowing.h"
 #include "Object.h"
-#include "System.h"
-#include "Camera.h"
 
 int Color(int red, int green, int blue, int alpha);
 void InitColorBuffer(unsigned long*& buf, int width, int height);
-
-class IRendererSystem : public System{
-public:
-    virtual void Render() = 0;
-    virtual void DrawLine(int x0, int y0, int x1, int y1, unsigned long* buf, int col) = 0;
-    virtual void DrawPoint(int x, int y, unsigned long* buf, int col) = 0;
-    virtual void CreateBackbuffer() = 0;
-    virtual void UpdateBackbuffer() = 0;
-    virtual void ResizeWindow() = 0;
-    virtual Camera& GetMainCamera() = 0;
-    virtual ~IRendererSystem() = default;
-};
 
 class RendererSystem : public IRendererSystem{
     public:
@@ -55,6 +41,7 @@ class RendererSystem : public IRendererSystem{
         void* _pBackBuffer;
         unsigned long* _pColorBuffer;
         float* _pZBuffer = new float[1024*768];
+        std::vector<glm::mat4> _viewMatrices;
 
         int color{0x00000000};
 };

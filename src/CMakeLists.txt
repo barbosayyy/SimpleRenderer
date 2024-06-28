@@ -2,6 +2,8 @@ add_library(SimpleRendererSrc STATIC
     Core.h
     Math.h
     Math.cpp
+    Console.h
+    Console.cpp
     System.h
     Primitives.h
     Primitives.cpp

@@ -5,8 +5,9 @@
 #include "Object.h"
 #include "Camera.h"
 
-#include <iostream>
+#include "Console.h"
 #include <profileapi.h>
+#include <winuser.h>
 
 // Debug
 bool window = 1;
@@ -26,49 +27,42 @@ ObjectSystem objectSystem;
 //          - Threads
 //
 
-void CreateConsole() {
-    AllocConsole();
-    FILE* fp;
-    freopen_s(&fp, "CONOUT$", "w", stdout);
-    freopen_s(&fp, "CONOUT$", "w", stderr);
-    freopen_s(&fp, "CONIN$", "r", stdin);
-    std::ios::sync_with_stdio();
-}
-
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
 
     LARGE_INTEGER start, end;
     double elapsedTime;
 
-    CreateConsole();
+    Console::Create();
     QueryPerformanceFrequency(&freq);
 
     windowSystem.Init();
-    std::cout << "Window Init" << std::endl;
-    std::cout << "Width: " << cfgDefaultWindowWidth << std::endl;
-    std::cout << "Height: " << cfgDefaultWindowHeight << std::endl;
+
+    Console::Out("Window Init");   
+    Console::Out("Width: ", cfgDefaultWindowWidth);
+    Console::Out("Height: ", cfgDefaultWindowHeight);
+
     windowSystem.SetInstance(hInstance);
     if(window)
         windowSystem.GetMainWindow()->Show(SW_SHOW);
 
     objectSystem.Init();
-    std::cout << "Objects Init" << std::endl;
+    Console::Out("Objects Init");
 
     rendererSystem.Init(&windowSystem, &objectSystem);
-    std::cout << "Renderer Init" << std::endl;
+    Console::Out("Renderer Init");
 
+    Console::Out("Renderer - Assigning device context");
     rendererSystem.PrepareDeviceContext();
-    std::cout << "Renderer - Assigned device context" << std::endl;
-    std::cout << "Renderer - Initializing buffers: ";
+    Console::Out("Renderer - Initializing buffers: ");
     rendererSystem.InitBuffers();
 
-    std::cout << std::endl;
+    Console::Out();
 
     objectSystem.AddTriangle(Triangle(Vector3(-0.75, -0.5, 0), Vector3(-0.5, 0.5, 0), Vector3(0.5,  0.5, 0)));
-    // objectSystem.AddDrawable(Triangle(Vector2(-0.75, -0.5), Vector2(0.5,  0.5), Vector2(0.5,  -0.5)));
+    // objectSystem.AddTriangle(Triangle(Vector3(-0.75, -0.5, 0), Vector3(0.5,  0.5, 0), Vector3(0.5,  -0.5, 0)));
     // objectSystem.AddDrawable(Triangle3d(Vector2(-0.75, -0.5), Vector2(0.5,  0.5), Vector2(0.5,  -0.5)));
 
-     std::cout << "Game Loop" << std::endl;
+    Console::Out("Starting Render Loop");
 
     MSG msg = {};
     while(msg.message != WM_QUIT && windowSystem.MainWindowNotClosed() == true){
@@ -89,7 +83,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             elapsedTime = static_cast<double>(end.QuadPart - start.QuadPart) / freq.QuadPart;
             currentFrame += 1/elapsedTime;
             if(fps){
-                std::cout << "fps: " << 1/elapsedTime << " frametime (Ms): " << (1/(1/elapsedTime))*1000 << " frame: " << currentFrame << std::endl;
+                Console::Out("fps: ", 1/elapsedTime, " frametime (Ms): ", (1/(1/elapsedTime))*1000, " frame: ", currentFrame);
             }
         }
     }
