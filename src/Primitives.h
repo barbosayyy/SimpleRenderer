@@ -3,14 +3,7 @@
 #include "Core.h"
 #include "glm/glm.hpp"
 
-class Drawable{
-public:
-    virtual bool Rasterize(int x, int y, int& color) = 0;
-protected:
-    Drawable(){};
-};
-
-class Triangle : public Drawable{
+class Triangle{
 public:
     Vector3 _v[3] = {
         {0, 0, 0},
@@ -25,11 +18,13 @@ public:
 
     Triangle(Vector3 v0, Vector3 v1, Vector3 v2);
 
-    bool Draw(int x, int y, int& color);
-
     void ComputeVertices();
-    
-    bool Rasterize(int x, int y, int& color) override;
+
+    bool BoundingBox(int x, int y);
+
+    bool Barycentric(int pX, int pY, float &w0, float &w1, float &w2);
+
+    void Rasterize(float w0, float w1, float w2, int& color);
     
     void PrintProjectedCorners();
     

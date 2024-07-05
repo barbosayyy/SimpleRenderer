@@ -1,8 +1,8 @@
 #include "pch.h"
 
-#include "Windowing.h"
-#include "Renderer.h"
-#include "Object.h"
+#include "InputSystem.h"
+#include "WindowSystem.h"
+#include "RendererSystem.h"
 #include "Camera.h"
 
 #include "Console.h"
@@ -11,20 +11,23 @@
 
 // Debug
 bool window = 1;
-bool queryPerformance = 1;
-bool fps = 1;
+bool queryPerformance = 0;
+bool fps = 0;
+bool pause = 0;
 
 LARGE_INTEGER freq;
+SHORT var1;
 int currentFrame;
 
 WindowSystem windowSystem;
 RendererSystem rendererSystem;
-ObjectSystem objectSystem;
+InputSystem inputSystem;
 
 //
-// -- TODO: - Rasterization algorithm       
-//          - Z-buffer and depth check (near, far)
-//          - Threads
+// -- TODO: - improve rendering algorithm for better performance 
+//          - improve task queueing
+//          - add safeties on renderer interruptions
+//          - shading
 //
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
@@ -35,33 +38,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     Console::Create();
     QueryPerformanceFrequency(&freq);
 
-    windowSystem.Init();
+    inputSystem.Init();
 
-    Console::Out("Window Init");   
-    Console::Out("Width: ", cfgDefaultWindowWidth);
-    Console::Out("Height: ", cfgDefaultWindowHeight);
-
-    windowSystem.SetInstance(hInstance);
+    windowSystem.Init(hInstance);
     if(window)
         windowSystem.GetMainWindow()->Show(SW_SHOW);
 
-    objectSystem.Init();
-    Console::Out("Objects Init");
-
-    rendererSystem.Init(&windowSystem, &objectSystem);
-    Console::Out("Renderer Init");
-
-    Console::Out("Renderer - Assigning device context");
-    rendererSystem.PrepareDeviceContext();
-    Console::Out("Renderer - Initializing buffers: ");
-    rendererSystem.InitBuffers();
+    rendererSystem.Init(&windowSystem);
+    rendererSystem.GetMainCamera().RegisterInputSystem(&inputSystem);
 
     Console::Out();
 
-    objectSystem.AddTriangle(Triangle(Vector3(-0.75, -0.5, 0), Vector3(-0.5, 0.5, 0), Vector3(0.5,  0.5, 0)));
-    // objectSystem.AddTriangle(Triangle(Vector3(-0.75, -0.5, 0), Vector3(0.5,  0.5, 0), Vector3(0.5,  -0.5, 0)));
-    // objectSystem.AddDrawable(Triangle3d(Vector2(-0.75, -0.5), Vector2(0.5,  0.5), Vector2(0.5,  -0.5)));
-
+    rendererSystem.AddTriangle(Triangle(Vector3(-1.0, 1.0, 0), Vector3(-1.0, -1.0, 0), Vector3(1.0,  -1.0, 0)));
+    rendererSystem.AddTriangle(Triangle(Vector3(-1.0, 0.5, -1), Vector3(0.5, -1.0, 2.0), Vector3(1.0,  0.5, -1)));
+    
     Console::Out("Starting Render Loop");
 
     MSG msg = {};
@@ -69,15 +59,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         if(queryPerformance)
             QueryPerformanceCounter(&start);
 
+        // Win32 Messages
         if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)){
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-        
-        rendererSystem.ResizeWindow();
 
-        rendererSystem.Render();
+        inputSystem.ProcessInput();
         
+        if(!pause){
+            rendererSystem.Render();
+        }
+
         if(queryPerformance){
             QueryPerformanceCounter(&end);
             elapsedTime = static_cast<double>(end.QuadPart - start.QuadPart) / freq.QuadPart;

@@ -3,6 +3,7 @@
 #include "Core.h"
 #include "System.h"
 #include "Camera.h"
+#include "Primitives.h"
 
 class IRendererSystem : public System{
 public:
@@ -13,5 +14,6 @@ public:
     virtual void UpdateBackbuffer() = 0;
     virtual void ResizeWindow() = 0;
     virtual Camera& GetMainCamera() = 0;
+    virtual void AddTriangle(Triangle triangle) = 0;
     virtual ~IRendererSystem() = default;
 };

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
-#include "glm/glm.hpp"
+#include "glm/vec2.hpp"
+#include "glm/vec3.hpp"
 
 constexpr unsigned int ARGB_RED = 0x00FF0000;
 constexpr unsigned int ARGB_GREEN = 0x0000FF00;

@@ -1,8 +1,7 @@
 #include "Primitives.h"
-#include "Windowing.h"
+#include "WindowSystem.h"
 #include "Math.h"
-#include "Renderer.h"
-#include <iostream>
+#include "RendererSystem.h"
 
 #include "Console.h"
 
@@ -18,16 +17,6 @@ Triangle::Triangle(Vector3 v0, Vector3 v1, Vector3 v2) : _minX(rendererSystem.Ge
 
     ComputeVertices();
     PrintProjectedCorners();
-}
-
-bool Triangle::Draw(int x, int y, int& color)
-{
-    // ComputeVertices();
-
-    if(x > _minX && x < _maxX && y > _minY && y < _maxY){
-        return Rasterize(x, y, color);
-    }
-    return false;
 }
 
 void Triangle::ComputeVertices(){
@@ -72,20 +61,31 @@ void Triangle::ComputeVertices(){
     }
 }
 
-bool Triangle::Rasterize(int x, int y, int& color){
-    
+bool Triangle::BoundingBox(int x, int y)
+{
+    if(x > _minX && x < _maxX && y > _minY && y < _maxY)
+        return true;
+    else 
+        return false;
+}
+
+bool Triangle::Barycentric(int pX, int pY, float &w0, float &w1, float &w2)
+{
     Vector2 pV2[3] = {Vector2(_projected[0].x, _projected[0].y), Vector2(_projected[1].x, _projected[1].y), Vector2(_projected[2].x, _projected[2].y)};
-    float w0 = EdgeInverted(Vector2(x,y), pV2[1], pV2[2])/EdgeInverted(pV2[0], pV2[1], pV2[2]);
-    float w1 = EdgeInverted(Vector2(x,y), pV2[2], pV2[0])/EdgeInverted(pV2[0], pV2[1], pV2[2]);
-    float w2 = EdgeInverted(Vector2(x,y), pV2[0], pV2[1])/EdgeInverted(pV2[0], pV2[1], pV2[2]);
+    float area = EdgeInverted(pV2[0], pV2[1], pV2[2]);
+    w0 = EdgeInverted(Vector2(pX,pY), pV2[1], pV2[2])/area;
+    w1 = EdgeInverted(Vector2(pX,pY), pV2[2], pV2[0])/area;
+    w2 = EdgeInverted(Vector2(pX,pY), pV2[0], pV2[1])/area;
     if(w0 >= 0 && w1 >= 0 && w2 >= 0){
-        // color = Color((w0*1+w1*0+w2*0)*255,(w0*0+w1*1+w2*0)*255,(w0*0+w1*0+w2*1)*255,255);
-        color = Color(0xAA,0x50,0x37,0xff);
         return true;
     }
     else{
         return false;
     }
+}
+
+void Triangle::Rasterize(float w0, float w1, float w2, int& col){
+    col = color((w0*1+w1*0+w2*0)*255,(w0*0+w1*1+w2*0)*255,(w0*0+w1*0+w2*1)*255,255);
 }
 
 void Triangle::PrintProjectedCorners(){
