@@ -18,6 +18,7 @@ public:
     void WorkerThread();
     unsigned int GetThreadIndex(std::thread::id);
     unsigned int GetNumWorkers() const {return _numWorkers;};
+    void FlushRenderTasks();
     void NotifyFrameComplete();
     void WaitFrameComplete();
 private:

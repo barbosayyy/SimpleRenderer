@@ -10,25 +10,43 @@
 extern WindowSystem windowSystem;
 extern RendererSystem rendererSystem;
 extern bool pause;
+extern bool shouldClose;
 
 LRESULT CALLBACK WndProc(HWND wnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
     switch(uMsg){
-        case WM_DESTROY:
-            if(windowSystem.MainWindowNotClosed() == false)
-                PostQuitMessage(0);
-            return 0;
+        case WM_PAINT:
         break;
-        case WM_SIZE: {
-                if(windowSystem.GetWindowByHandle(wnd) != nullptr){
-                    RECT rect;
-                    GetClientRect(wnd, &rect);
-                    windowSystem.GetWindowByHandle(wnd)->_newWidth = rect.right - rect.left;
-                    windowSystem.GetWindowByHandle(wnd)->_newHeight = rect.bottom - rect.top;
-                    Console::Out(windowSystem.GetWindowByHandle(wnd)->_newWidth);
-                    Console::Out(windowSystem.GetWindowByHandle(wnd)->_newHeight);
-                }
+        case WM_DESTROY:
+            if(shouldClose == false){
+                PostQuitMessage(0);
+                shouldClose = true;
             }
         break;
+        case WM_EXITSIZEMOVE: {
+            RECT rect;
+            GetClientRect(wnd, &rect);
+            windowSystem.GetWindowByHandle(wnd)->_newWidth = rect.right - rect.left;
+            windowSystem.GetWindowByHandle(wnd)->_newHeight = rect.bottom - rect.top;
+        }
+        case WM_ENTERSIZEMOVE: {
+
+            }
+        break;
+        case WM_SIZE:{
+            Console::Out(wParam);
+            if(wParam == SIZE_RESTORED){
+
+            }
+            else if(wParam == SIZE_MINIMIZED){
+
+            }
+            else if(wParam == SIZE_MAXIMIZED){
+                RECT rect;
+                GetClientRect(wnd, &rect);
+                windowSystem.GetWindowByHandle(wnd)->_newWidth = rect.right - rect.left;
+                windowSystem.GetWindowByHandle(wnd)->_newHeight = rect.bottom - rect.top;
+            }
+        }
         case WM_LBUTTONDOWN:
             Console::Out("X: ", GET_X_LPARAM(lParam));
             Console::Out("Y: ", GET_Y_LPARAM(lParam));

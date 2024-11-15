@@ -5,15 +5,15 @@
 class WindowSystem : public IWindowSystem{
     public:
         void Init(HINSTANCE hInstance);
-        void Shutdown() override;
+        void Shutdown();
         std::vector<Window*> _windows;
         WindowSystem();
-        ~WindowSystem() {Shutdown();};
+        ~WindowSystem(){};
 
-        Window* GetMainWindow() override {if(MainWindowNotClosed()){return _mainWindow;}else{return nullptr;};};
+        Window* GetMainWindow() override;
         Window* GetWindowByHandle(HWND handle) override;
         void AddWindow(Window* window) override;
-        bool MainWindowNotClosed() override {if(_mainWindow->GetHandle() != nullptr){return true;}else{return false;}};
+        void MoveWindow(int x, int y) override {_mainWindow->Move((x), (y));};
     private:
         Window* _mainWindow;
         HINSTANCE _hInstance {nullptr};

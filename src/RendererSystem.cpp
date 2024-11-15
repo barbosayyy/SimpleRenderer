@@ -29,10 +29,6 @@ RendererSystem::RendererSystem() : _mainCamera(Camera(glm::vec3(0,0,5))), _rende
 
 }
 
-RendererSystem::~RendererSystem(){
-    Shutdown();
-}
-
 void RendererSystem::Init(IWindowSystem* windowSystem){
     System::Init();
     _windowSystem = windowSystem;
@@ -41,26 +37,26 @@ void RendererSystem::Init(IWindowSystem* windowSystem){
     Console::Out("Renderer - Assigning device context");
     this->PrepareDeviceContext();
     Console::Out("Renderer - Initializing buffers: ");
-    this->InitBuffers();
+    this->InitFramebuffers();
 
-    _multiThreaded = true;
-    //Temp
+    _isMultithreaded = true;
     _smallTiles = false;
+    ToggleRendering(true);
     _renderThreadPool.Start();
     Console::Out("Renderer - Started rendering thread pool ");
 }
 
 void RendererSystem::Shutdown(){
+    _renderThreadPool.Stop();
     // Set frame to black
-    memset(_pColorBuffer, 0, _windowSystem->GetMainWindow()->_width * _windowSystem->GetMainWindow()->_height * 4);
-    memcpy(_pBackBuffer, _pColorBuffer, _windowSystem->GetMainWindow()->_width * _windowSystem->GetMainWindow()->_height * 4);
+    memset(_pColorBuffer, 0, _bufferWidth * _bufferHeight * 4);
+    memcpy(_pBackBuffer, _pColorBuffer, _bufferWidth * _bufferHeight * 4);
     // Swap Buffer
     HDC hdcWin = GetDC(_windowSystem->GetMainWindow()->GetHandle());
-    BitBlt(hdcWin, 0, 0, _windowSystem->GetMainWindow()->_width, _windowSystem->GetMainWindow()->_height, _deviceContext, 0, 0, SRCCOPY);;
+    BitBlt(hdcWin, 0, 0, _bufferWidth, _bufferHeight, _deviceContext, 0, 0, SRCCOPY);
     ReleaseDC(_windowSystem->GetMainWindow()->GetHandle(), hdcWin);
     delete[] _pColorBuffer;
     delete[] _pZBuffer;
-    delete _windowSystem;
     DeleteObject(_frameBitmap);
     ReleaseDC(_windowSystem->GetMainWindow()->GetHandle(), _deviceContext);
     System::Shutdown();
@@ -71,36 +67,44 @@ void RendererSystem::PrepareDeviceContext()
     HDC dc = GetDC(_windowSystem->GetMainWindow()->GetHandle());
     _deviceContext = CreateCompatibleDC(dc);
     ReleaseDC(_windowSystem->GetMainWindow()->GetHandle(), dc);
-    CreateBackbuffer();
+    InitFrameBackbuffer();
     SelectObject(_deviceContext, _frameBitmap);
 }
 
-void RendererSystem::InitBuffers()
+void RendererSystem::InitFramebuffers()
 {
-    _pColorBuffer = new unsigned long[_windowSystem->GetMainWindow()->_width * _windowSystem->GetMainWindow()->_height * 4];
-    for(int i = 0; i < _windowSystem->GetMainWindow()->_height;++i){
-        for(int j = 0; j < _windowSystem->GetMainWindow()->_width; ++j){
-            _pColorBuffer[i*_windowSystem->GetMainWindow()->_width+j] = color(255,255,255,255);
+    _bufferWidth = _windowSystem->GetMainWindow()->_width;
+    _bufferHeight = _windowSystem->GetMainWindow()->_height;
+    _pColorBuffer = new unsigned long[_bufferWidth * _bufferHeight * 4];
+    for(int i = 0; i < _bufferHeight;++i){
+        for(int j = 0; j < _bufferWidth; ++j){
+            _pColorBuffer[i*_bufferWidth+j] = color(255,255,255,255);
         }
     }
-    _pZBuffer = new float[_windowSystem->GetMainWindow()->_width * _windowSystem->GetMainWindow()->_height];
+    _pZBuffer = new float[_bufferWidth*_bufferHeight];
     Console::OutInline("Color ");
-    for(int i = 0; i < _windowSystem->GetMainWindow()->_width*_windowSystem->GetMainWindow()->_height; i++){
+    for(int i = 0; i < _bufferWidth*_bufferHeight; i++){
         _pZBuffer[i] = std::numeric_limits<float>::infinity();
     }
     Console::OutInline("Depth ");
     Console::Out();
 }
 
+void RendererSystem::ToggleRendering(bool toggle)
+{
+    _isRenderingEnabled = toggle;
+    // Console::Out("Rendering: ", toggle);
+}
+
 void RendererSystem::Render(){
-    if(IsActive()){
+    if(IsActive() && IsRenderingEnabled()){
         ResizeWindow();
 
-        ClearBuffers();
+        ClearFramebuffers();
 
         PollRecompute();
 
-        if(_multiThreaded){
+        if(_isMultithreaded){
             int x0, y0, x1, y1;
             int wWidth = _windowSystem->GetMainWindow()->_width;
             int wHeight = _windowSystem->GetMainWindow()->_height;
@@ -154,7 +158,7 @@ void RendererSystem::Render(){
                 }
             }
             _renderThreadPool.WaitFrameComplete();
-            SwapBuffers();
+            SwapFramebuffers();
         }
         else{
             int currPx {0};
@@ -189,6 +193,7 @@ void RendererSystem::Render(){
                     wPx = 0;
                 }
             }
+            SwapFramebuffers();
             // end frame pass
         }
     }
@@ -213,6 +218,9 @@ void RendererSystem::RenderTask(int tilex0, int tiley0, int tilex1, int tiley1)
                         dist = glm::distance((w0*_triangles.at(f)._v[0].z+w1*_triangles.at(f)._v[1].z+w2*_triangles.at(f)._v[2].z), _mainCamera._wPos.z);
                         if(dist < _pZBuffer[currPx]){
                             _pZBuffer[currPx] = dist;
+                            // Console::Out(w0);
+                            // Console::Out(w1);
+                            // Console::Out(w2);
                             _triangles.at(f).Rasterize(w0, w1, w2, _color);
                             _pColorBuffer[currPx] = _color;
                         }
@@ -248,7 +256,7 @@ void RendererSystem::DrawPoint(int x, int y, unsigned long* buf, int col)
         buf[GetIndexInMatrix(_windowSystem->GetMainWindow()->_width, _windowSystem->GetMainWindow()->_height, x, y)] = col;
 }
 
-void RendererSystem::CreateBackbuffer() {
+void RendererSystem::InitFrameBackbuffer() {
     _frameBitmapInfo.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
     _frameBitmapInfo.bmiHeader.biWidth = _windowSystem->GetMainWindow()->_width;
     _frameBitmapInfo.bmiHeader.biHeight = -_windowSystem->GetMainWindow()->_height;
@@ -267,7 +275,7 @@ void RendererSystem::CreateBackbuffer() {
         DeleteObject(_frameBitmap);
 }
 
-void RendererSystem::UpdateBackbuffer() {
+void RendererSystem::UpdateFramebuffers() {
     _frameBitmapInfo.bmiHeader.biWidth = _windowSystem->GetMainWindow()->_width;
     _frameBitmapInfo.bmiHeader.biHeight = -_windowSystem->GetMainWindow()->_height;
     if(_frameBitmap){
@@ -277,13 +285,21 @@ void RendererSystem::UpdateBackbuffer() {
     if(!_frameBitmap){
         DeleteObject(_frameBitmap);
     }
+    delete(_pColorBuffer);
+    delete(_pZBuffer);
+
+    _bufferWidth = _windowSystem->GetMainWindow()->_width;
+    _bufferHeight = _windowSystem->GetMainWindow()->_height;
+
+    _pColorBuffer = new unsigned long[_bufferWidth * _bufferHeight * 4];
+    _pZBuffer = new float[_bufferWidth * _bufferHeight];
 }
 
 void RendererSystem::ResizeWindow(){
     if(_windowSystem->GetMainWindow()->_newHeight != _windowSystem->GetMainWindow()->_height || _windowSystem->GetMainWindow()->_newWidth != _windowSystem->GetMainWindow()->_width){   
         _windowSystem->GetMainWindow()->_width = _windowSystem->GetMainWindow()->_newWidth;
         _windowSystem->GetMainWindow()->_height = _windowSystem->GetMainWindow()->_newHeight;
-        UpdateBackbuffer();
+        UpdateFramebuffers();
         SelectObject(_deviceContext, _frameBitmap);
     }
 }
@@ -293,17 +309,19 @@ void RendererSystem::AddTriangle(Triangle triangle)
     _triangles.push_back(triangle);
 }
 
-void RendererSystem::ClearBuffers()
+void RendererSystem::ClearFramebuffers()
 {
-    memset(_pColorBuffer, 0, _windowSystem->GetMainWindow()->_width * _windowSystem->GetMainWindow()->_height * 4);
-    std::fill(_pZBuffer, _pZBuffer + (_windowSystem->GetMainWindow()->_width * _windowSystem->GetMainWindow()->_height), std::numeric_limits<float>::infinity());
+    if(_pColorBuffer != nullptr)
+        memset(_pColorBuffer, 0, _bufferWidth * _bufferHeight * 4);
+    if(_pZBuffer != nullptr)
+        std::fill(_pZBuffer, _pZBuffer + (_bufferWidth * _bufferHeight), std::numeric_limits<float>::infinity());
 }
 
-void RendererSystem::SwapBuffers()
+void RendererSystem::SwapFramebuffers()
 {
-    memcpy(_pBackBuffer, _pColorBuffer, _windowSystem->GetMainWindow()->_width * _windowSystem->GetMainWindow()->_height * 4);
+    memcpy(_pBackBuffer, _pColorBuffer, _bufferWidth * _bufferHeight * 4);
 
-    BitBlt(GetDC(_windowSystem->GetMainWindow()->GetHandle()), 0, 0, _windowSystem->GetMainWindow()->_width, _windowSystem->GetMainWindow()->_height, _deviceContext, 0, 0, SRCCOPY);
+    BitBlt(GetDC(_windowSystem->GetMainWindow()->GetHandle()), 0, 0, _bufferWidth, _bufferHeight, _deviceContext, 0, 0, SRCCOPY);
 }
 
 void RendererSystem::PollRecompute()

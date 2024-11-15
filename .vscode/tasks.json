@@ -1,0 +1,28 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Build",
+        "type": "shell",
+        "command": "cmake",
+        "args": [
+            "--build",
+            "${workspaceFolder}/build",
+            "--config",
+            "Debug",
+            "--target",
+            "all"
+        ],
+        "dependsOn": "Clean Build"
+      },
+      {
+        "label": "Clean Build",
+        "type": "shell",
+        "command": "cmd",
+        "args": [
+          "/c",
+          "IF EXIST ${workspaceFolder}\\build (rmdir /s /q ${workspaceFolder\\build)&mkdir ${workspaceFolder\\build"
+        ],
+      }
+    ]
+  }

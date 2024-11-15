@@ -8,21 +8,16 @@ enum class SystemState{
 
 class System{
 public:
-    virtual void Init(){
+    void Init(){
         _state = SystemState::ACTIVE;
     };
-    virtual void Shutdown(){
+    void Shutdown(){
         _state = SystemState::DISABLED;
     };
-    virtual bool IsActive(){
-        if(_state == SystemState::ACTIVE){
-            return true;
-        }
-        else{
-            return false;
-        }
+    bool IsActive(){
+        return _state == SystemState::ACTIVE;
     }; 
-    virtual ~System() = default;
+    ~System() = default;
 protected:
     SystemState _state;
     System() : _state(SystemState::DISABLED){};

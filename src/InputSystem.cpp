@@ -3,16 +3,19 @@
 #include "pch.h"
 #include <winuser.h>
 
+InputSystem::InputSystem(){
+
+}
+
 void InputSystem::Init()
 {
     System::Init();
-    
-    Console::Out("Input Init");
 }
 
 void InputSystem::Shutdown()
 {
     
+    System::Shutdown();
 }
 
 bool InputSystem::GetKeyPressDown(int key)

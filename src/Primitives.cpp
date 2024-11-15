@@ -61,16 +61,14 @@ void Triangle::ComputeVertices(){
     }
 }
 
-bool Triangle::BoundingBox(int x, int y)
-{
+bool Triangle::BoundingBox(int x, int y){
     if(x > _minX && x < _maxX && y > _minY && y < _maxY)
         return true;
     else 
         return false;
 }
 
-bool Triangle::Barycentric(int pX, int pY, float &w0, float &w1, float &w2)
-{
+bool Triangle::Barycentric(int pX, int pY, float &w0, float &w1, float &w2){
     Vector2 pV2[3] = {Vector2(_projected[0].x, _projected[0].y), Vector2(_projected[1].x, _projected[1].y), Vector2(_projected[2].x, _projected[2].y)};
     float area = EdgeInverted(pV2[0], pV2[1], pV2[2]);
     w0 = EdgeInverted(Vector2(pX,pY), pV2[1], pV2[2])/area;
@@ -85,7 +83,8 @@ bool Triangle::Barycentric(int pX, int pY, float &w0, float &w1, float &w2)
 }
 
 void Triangle::Rasterize(float w0, float w1, float w2, int& col){
-    col = color((w0*1+w1*0+w2*0)*255,(w0*0+w1*1+w2*0)*255,(w0*0+w1*0+w2*1)*255,255);
+    // col = color((w0*1+w1*0+w2*0)*255,(w0*0+w1*1+w2*0)*255,(w0*0+w1*0+w2*1)*255,255);
+    col = color(0.6*255,0.3*255,0.0*255,255);
 }
 
 void Triangle::PrintProjectedCorners(){

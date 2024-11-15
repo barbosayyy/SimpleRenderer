@@ -10,9 +10,3 @@ void Console::Create() {
     freopen_s(&fp, "CONIN$", "r", stdin);
     std::ios::sync_with_stdio();
 }
-
-// template <typename ...Args>
-// void Console::OutL(Args... args)
-
-// template <typename ...Args>
-// void Console::Out(Args... args)

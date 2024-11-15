@@ -1,5 +1,6 @@
 #include "pch.h"
 
+#include "Core.h"
 #include "InputSystem.h"
 #include "WindowSystem.h"
 #include "RendererSystem.h"
@@ -9,55 +10,71 @@
 #include <profileapi.h>
 #include <winuser.h>
 
+//
+// -- TODO: - improve rendering algorithm for better performance 
+//          - improve task queueing
+//          - shading
+//
+
 // Debug
 bool window = 1;
 bool queryPerformance = 0;
 bool fps = 0;
 bool pause = 0;
 
+bool shouldClose = 0;
 LARGE_INTEGER freq;
-SHORT var1;
 int currentFrame;
 
 WindowSystem windowSystem;
 RendererSystem rendererSystem;
 InputSystem inputSystem;
 
-//
-// -- TODO: - improve rendering algorithm for better performance 
-//          - improve task queueing
-//          - add safeties on renderer interruptions
-//          - shading
-//
+void InitializeInput(){
+    inputSystem.Init();
+}
+
+void InitializeWindow(HINSTANCE hInstance){
+    windowSystem.Init(hInstance);
+    if(window){
+        windowSystem.GetMainWindow()->Show(SW_SHOW);
+        windowSystem.MoveWindow(1080, 0);
+    }
+}
+
+void InitializeRenderer(){
+    rendererSystem.Init(&windowSystem);
+    rendererSystem.GetMainCamera().RegisterInputSystem(&inputSystem);
+}
+
+void Start(){
+    rendererSystem.AddTriangle(Triangle(Vector3(-1.0, 1.0, 0), Vector3(-1.0, -1.0, 0), Vector3(1.0,  -1.0, 0)));
+    rendererSystem.AddTriangle(Triangle(Vector3(-1.0, 1.0, 0), Vector3(1.0, -1.0, 0), Vector3(1.0,  1.0, 0)));
+    rendererSystem.AddTriangle(Triangle(Vector3(1.0, 1.0, 0), Vector3(1.0, -1.0, 0), Vector3(1.0,  -1.0, -2.0)));
+    rendererSystem.AddTriangle(Triangle(Vector3(1.0, 1.0, 0), Vector3(1.0, -1.0, -2.0), Vector3(1.0,  1.0, -2.0)));
+}
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
 
     LARGE_INTEGER start, end;
     double elapsedTime;
 
+    #ifdef EXTERNAL_CONSOLE
     Console::Create();
+    #endif
+
     QueryPerformanceFrequency(&freq);
 
-    inputSystem.Init();
+    InitializeInput();
+    InitializeWindow(hInstance);
+    InitializeRenderer();   
 
-    windowSystem.Init(hInstance);
-    if(window)
-        windowSystem.GetMainWindow()->Show(SW_SHOW);
-
-    rendererSystem.Init(&windowSystem);
-    rendererSystem.GetMainCamera().RegisterInputSystem(&inputSystem);
-
-    Console::Out();
-
-    rendererSystem.AddTriangle(Triangle(Vector3(-1.0, 1.0, 0), Vector3(-1.0, -1.0, 0), Vector3(1.0,  -1.0, 0)));
-    rendererSystem.AddTriangle(Triangle(Vector3(-1.0, 0.5, -1), Vector3(0.5, -1.0, 2.0), Vector3(1.0,  0.5, -1)));
-    
-    Console::Out("Starting Render Loop");
-
+    Start();
     MSG msg = {};
-    while(msg.message != WM_QUIT && windowSystem.MainWindowNotClosed() == true){
-        if(queryPerformance)
+    while(msg.message != WM_QUIT || shouldClose == false){
+        if(queryPerformance){
             QueryPerformanceCounter(&start);
+        }
 
         // Win32 Messages
         if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)){
@@ -66,7 +83,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
 
         inputSystem.ProcessInput();
-        
+
         if(!pause){
             rendererSystem.Render();
         }
@@ -74,11 +91,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         if(queryPerformance){
             QueryPerformanceCounter(&end);
             elapsedTime = static_cast<double>(end.QuadPart - start.QuadPart) / freq.QuadPart;
-            currentFrame += 1/elapsedTime;
+            rendererSystem.GetCurrentFrame() += 1/elapsedTime;
             if(fps){
                 Console::Out("fps: ", 1/elapsedTime, " frametime (Ms): ", (1/(1/elapsedTime))*1000, " frame: ", currentFrame);
             }
         }
     }
+    rendererSystem.Shutdown();
+    windowSystem.Shutdown();
+    inputSystem.Shutdown();
     return (int)msg.wParam;
 }

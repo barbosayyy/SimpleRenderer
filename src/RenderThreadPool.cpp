@@ -29,8 +29,13 @@ void RenderThreadPool::OrderStop()
 
 void RenderThreadPool::Stop()
 {
+    _aStop.store(true);
+    NotifyFrameComplete();
+    WaitFrameComplete();
     for(std::thread &thr : _workers){
-        thr.join();
+        if(thr.joinable()){
+            thr.join();
+        }
     }
 }
 
@@ -67,6 +72,14 @@ void RenderThreadPool::WorkerThread()
     }
 }
 
+void RenderThreadPool::FlushRenderTasks()
+{
+    if(_tasks.empty() != true){
+        std::queue<std::pair<std::function<void(int, int, int, int)>, std::tuple<int, int, int, int>>> empty;
+        std::swap(_tasks, empty);
+    }
+}
+
 void RenderThreadPool::NotifyFrameComplete()
 {
     std::unique_lock<std::mutex> lock(queueMutex);
@@ -81,4 +94,5 @@ void RenderThreadPool::WaitFrameComplete()
     _aFrameComplete.store(false);
     _aTasksCompleted.store(0);
     _aTasksTotal.store(0);
+    FlushRenderTasks();
 }

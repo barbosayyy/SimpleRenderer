@@ -3,11 +3,11 @@
 
 class InputSystem : public IInputSystem {
 public:
-    InputSystem() {};
-    ~InputSystem() {};
+    InputSystem();
+    ~InputSystem(){};
 
-    void Init() override;
-    void Shutdown() override;
+    void Init();
+    void Shutdown();
     void ProcessInput();
     void RegisterAction(std::function<void()> func) override;
     bool GetKeyPressDown(int key) override;
